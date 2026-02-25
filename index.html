@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>סטטוס פרויקט - פורטל לקוחות</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; text-align: center; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: right; }
+        th { background-color: #34495e; color: white; }
+        .status-tag { padding: 5px 10px; border-radius: 20px; font-size: 0.85em; font-weight: bold; }
+        .completed { background: #d4edda; color: #155724; }
+        .in-progress { background: #fff3cd; color: #856404; }
+        #client-name { color: #3498db; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <img src="https://via.placeholder.com/150x50?text=LOGO" alt="Logo" style="margin-bottom: 10px;">
+    <h1>שלום, <span id="client-name">אורח</span></h1>
+    <p>להלן סטטוס התקדמות המשימות בפרויקט שלך:</p>
+    
+    <table id="tasks-table">
+        <thead>
+            <tr>
+                <th>משימה</th>
+                <th>תאריך יעד</th>
+                <th>סטטוס</th>
+            </tr>
+        </thead>
+        <tbody id="table-body">
+            </tbody>
+    </table>
+</div>
+
+<script>
+    // 1. הדבק כאן את הקישור ל-CSV שקיבלת מ"פרסום באינטרנט" של גוגל שיטס
+    const sheetUrl = 'YOUR_GOOGLE_SHEETS_CSV_LINK_HERE';
+
+    // 2. פונקציה לשליפת הלקוח מה-URL (למשל ?client=cohen)
+    const urlParams = new URLSearchParams(window.location.search);
+    const clientID = urlParams.get('client');
+
+    async function loadTasks() {
+        if (!clientID) {
+            document.body.innerHTML = "<h1>שגיאה: לא זוהה לקוח. נא להשתמש בלינק האישי שנשלח אליך.</h1>";
+            return;
+        }
+
+        try {
+            const response = await fetch(sheetUrl);
+            const data = await response.text();
+            const rows = data.split('\n').slice(1); // חיתוך הכותרות
+
+            const tableBody = document.getElementById('table-body');
+            document.getElementById('client-name').innerText = clientID;
+
+            rows.forEach(row => {
+                const cols = row.split(','); // מניח שהעמודות הן: ClientID, TaskName, Deadline, Status
+                
+                // סינון: רק אם ה-ID בשורה מתאים ללקוח ב-URL
+                if (cols[0] && cols[0].trim().toLowerCase() === clientID.toLowerCase()) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${cols[1]}</td>
+                        <td>${cols[2]}</td>
+                        <td><span class="status-tag ${cols[3].includes('בוצע') ? 'completed' : 'in-progress'}">${cols[3]}</span></td>
+                    `;
+                    tableBody.appendChild(tr);
+                }
+            });
+        } catch (error) {
+            console.error("Error loading sheet:", error);
+        }
+    }
+
+    loadTasks();
+</script>
+
+</body>
+</html>
