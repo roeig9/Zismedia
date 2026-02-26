@@ -2,74 +2,103 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>פורטל מעקב - דאטה חי</title>
+    <title>בדיקת חיבור גוגל שיטס</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: #f4f7f6; color: #333; }
-        .box { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 900px; margin: auto; }
-        h1 { text-align: center; color: #2c3e50; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: right; }
-        th { background: #3498db; color: white; font-weight: bold; }
-        tr:nth-child(even) { background-color: #f9f9f9; }
-        tr:hover { background-color: #f1f1f1; }
-        .status-msg { text-align: center; padding: 20px; font-style: italic; color: #666; }
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+        .box { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: right; }
+        th { background: #eee; }
+        .error-msg { color: red; font-weight: bold; padding: 10px; border: 1px solid red; display: none; }
     </style>
 </head>
 <body>
 
 <div class="box">
-    <h1>לוח בקרה אישי</h1>
+    <h1>פורטל דאטה (בדיקה)</h1>
+    <div id="error-box" class="error-msg"></div>
+    
     <table id="data-table">
         <thead>
             <tr>
-                <th>תאריך ושעה</th>
-                <th>סוג אוטומציה</th>
-                <th>שם מבצע</th>
+                <th>Date & Time</th>
+                <th>Automation</th>
+                <th>Name</th>
             </tr>
         </thead>
         <tbody id="table-body">
-            <tr><td colspan="3" class="status-msg">טוען נתונים ממערכת ClickUp...</td></tr>
+            <tr>
+                <td colspan="3">טוען נתונים...</td>
+            </tr>
         </tbody>
     </table>
 </div>
 
 <script>
-    // הלינק של ה-CSV שלך מגוגל שיטס
     const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTfmfSN0uJd2C-yqz5tXVttSOlv4ik6wjtgUhWQvMSlWj2S4TeLgMJLDdU0NRp9ii5ENunwTXbwR3Qm/pub?output=csv';
 
     async function fetchData() {
         const tableBody = document.getElementById('table-body');
-        
-        // 1. קבלת הערך מה-URL (למשל: ?client=ClickUp)
-        const params = new URLSearchParams(window.location.search);
-        const clientFilter = params.get('client'); 
+        const errorBox = document.getElementById('error-box');
+
+        // --- 1. שליפת הפרמטר מהכתובת ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const clientFilter = urlParams.get('client'); // מחפש ?client=
 
         try {
+            console.log("מנסה למשוך נתונים מהלינק:", sheetUrl);
             const response = await fetch(sheetUrl);
-            const data = await response.text();
             
-            // פיצול שורות וניקוי רווחים
-            const rows = data.split('\n').filter(r => r.trim() !== '');
-            tableBody.innerHTML = ''; 
+            if (!response.ok) throw new Error("הלינק של גוגל לא מחזיר תשובה תקינה");
 
-            // ריצה על השורות (דילוג על שורת הכותרת בשיטס)
+            const data = await response.text();
+            const rows = data.split('\n').filter(row => row.trim() !== '');
+            
+            if (rows.length <= 1) {
+                tableBody.innerHTML = '<tr><td colspan="3">הגיליון ריק או שלא נמצאו נתונים</td></tr>';
+                return;
+            }
+
+            tableBody.innerHTML = '';
+            
             rows.slice(1).forEach(row => {
                 const cols = row.split(',');
                 
-                // הגדרת משתנים לפי סדר העמודות בשיטס שלך
-                const colDateTime = cols[0] ? cols[0].trim() : '';
-                const colAutomation = cols[1] ? cols[1].trim() : ''; // עמודה B (הפילטר)
-                const colName = cols[2] ? cols[2].trim() : '';
-
-                // 2. בדיקת התאמה (Filter Logic)
-                // אם אין ?client בכתובת -> מציג הכל. 
-                // אם יש -> בודק אם המילה מופיעה בעמודה השנייה.
-                let showRow = true;
+                // --- 2. לוגיקת הפילטור ---
+                const automationValue = cols[1] ? cols[1].trim() : ''; // עמודה שנייה
+                
+                // אם אין פילטר בכתובת - תראה הכל. אם יש - תראה רק התאמות.
+                let shouldShow = true;
                 if (clientFilter) {
-                    showRow = colAutomation.toLowerCase().includes(clientFilter.toLowerCase().trim());
+                    shouldShow = automationValue.toLowerCase().includes(clientFilter.toLowerCase().trim());
                 }
 
-                if (showRow) {
+                if (shouldShow) {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td>${colDateTime
+                        <td>${cols[0] || '-'}</td>
+                        <td>${cols[1] || '-'}</td>
+                        <td>${cols[2] || '-'}</td>
+                    `;
+                    tableBody.appendChild(tr);
+                }
+            });
+
+            // אם סיננו הכל ולא נשאר מה להציג
+            if (tableBody.innerHTML === '') {
+                tableBody.innerHTML = '<tr><td colspan="3">לא נמצאו שורות תואמות לפילטר</td></tr>';
+            }
+
+        } catch (err) {
+            console.error("שגיאה:", err);
+            errorBox.style.display = 'block';
+            errorBox.innerText = "שגיאה: " + err.message;
+            tableBody.innerHTML = '<tr><td colspan="3">טעינה נכשלה</td></tr>';
+        }
+    }
+
+    fetchData();
+</script>
+
+</body>
+</html>
