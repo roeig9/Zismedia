@@ -1,103 +1,108 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>בדיקת חיבור גוגל שיטס</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
-        .box { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ccc; padding: 10px; text-align: right; }
-        th { background: #eee; }
-        .error-msg { color: red; font-weight: bold; padding: 10px; border: 1px solid red; display: none; }
-    </style>
+  <meta charset="UTF-8">
+  <title>Google Sheet Viewer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f4f6f8;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      background: white;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #2c3e50;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+
+    .info {
+      margin-bottom: 15px;
+      color: #555;
+    }
+  </style>
 </head>
 <body>
 
-<div class="box">
-    <h1>פורטל דאטה (בדיקה)</h1>
-    <div id="error-box" class="error-msg"></div>
-    
-    <table id="data-table">
-        <thead>
-            <tr>
-                <th>Date & Time</th>
-                <th>Automation</th>
-                <th>Name</th>
-            </tr>
-        </thead>
-        <tbody id="table-body">
-            <tr>
-                <td colspan="3">טוען נתונים...</td>
-            </tr>
-        </tbody>
-    </table>
-</div>
+<h1>Client Table Viewer</h1>
+<div class="info" id="info"></div>
+
+<table id="sheetTable"></table>
 
 <script>
-    const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTfmfSN0uJd2C-yqz5tXVttSOlv4ik6wjtgUhWQvMSlWj2S4TeLgMJLDdU0NRp9ii5ENunwTXbwR3Qm/pub?output=csv';
+  const csvUrl = "YOUR_CSV_URL"; // <-- שים כאן את הלינק שלך
 
-    async function fetchData() {
-        const tableBody = document.getElementById('table-body');
-        const errorBox = document.getElementById('error-box');
+  // קריאת פרמטר מה-URL
+  const params = new URLSearchParams(window.location.search);
+  const clientFilter = params.get("client");
 
-        // --- 1. שליפת הפרמטר מהכתובת ---
-        const urlParams = new URLSearchParams(window.location.search);
-        const clientFilter = urlParams.get('client'); // מחפש ?client=
+  async function loadData() {
+    const response = await fetch(csvUrl);
+    const csvText = await response.text();
 
-        try {
-            console.log("מנסה למשוך נתונים מהלינק:", sheetUrl);
-            const response = await fetch(sheetUrl);
-            
-            if (!response.ok) throw new Error("הלינק של גוגל לא מחזיר תשובה תקינה");
+    const rows = csvText.split("\n").map(row => row.split(","));
 
-            const data = await response.text();
-            const rows = data.split('\n').filter(row => row.trim() !== '');
-            
-            if (rows.length <= 1) {
-                tableBody.innerHTML = '<tr><td colspan="3">הגיליון ריק או שלא נמצאו נתונים</td></tr>';
-                return;
-            }
+    if (rows.length === 0) return;
 
-            tableBody.innerHTML = '';
-            
-            rows.slice(1).forEach(row => {
-                const cols = row.split(',');
-                
-                // --- 2. לוגיקת הפילטור ---
-                const automationValue = cols[1] ? cols[1].trim() : ''; // עמודה שנייה
-                
-                // אם אין פילטר בכתובת - תראה הכל. אם יש - תראה רק התאמות.
-                let shouldShow = true;
-                if (clientFilter) {
-                    shouldShow = automationValue.toLowerCase().includes(clientFilter.toLowerCase().trim());
-                }
+    const table = document.getElementById("sheetTable");
+    table.innerHTML = "";
 
-                if (shouldShow) {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${cols[0] || '-'}</td>
-                        <td>${cols[1] || '-'}</td>
-                        <td>${cols[2] || '-'}</td>
-                    `;
-                    tableBody.appendChild(tr);
-                }
-            });
+    // Header
+    const headerRow = document.createElement("tr");
+    rows[0].forEach(cell => {
+      const th = document.createElement("th");
+      th.textContent = cell;
+      headerRow.appendChild(th);
+    });
+    table.appendChild(headerRow);
 
-            // אם סיננו הכל ולא נשאר מה להציג
-            if (tableBody.innerHTML === '') {
-                tableBody.innerHTML = '<tr><td colspan="3">לא נמצאו שורות תואמות לפילטר</td></tr>';
-            }
+    let filteredRows = rows.slice(1);
 
-        } catch (err) {
-            console.error("שגיאה:", err);
-            errorBox.style.display = 'block';
-            errorBox.innerText = "שגיאה: " + err.message;
-            tableBody.innerHTML = '<tr><td colspan="3">טעינה נכשלה</td></tr>';
-        }
+    // סינון לפי עמודה שנייה (index 1)
+    if (clientFilter) {
+      filteredRows = filteredRows.filter(row =>
+        row[1] && row[1].toLowerCase().includes(clientFilter.toLowerCase())
+      );
+
+      document.getElementById("info").innerText =
+        `Filtered by client = "${clientFilter}" (${filteredRows.length} results)`;
     }
 
-    fetchData();
+    // הוספת שורות לטבלה
+    filteredRows.forEach(row => {
+      const tr = document.createElement("tr");
+      row.forEach(cell => {
+        const td = document.createElement("td");
+        td.textContent = cell;
+        tr.appendChild(td);
+      });
+      table.appendChild(tr);
+    });
+  }
+
+  loadData();
 </script>
 
 </body>
