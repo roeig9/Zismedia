@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="he" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Davidson · Spoton Dashboard</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Heebo:wght@300;400;500;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --brand:      #FF4E1A;
+      --brand-soft: #FF6B3D;
+      --brand-dim:  rgba(255,78,26,.12);
+      --brand-glow: rgba(255,78,26,.3);
+      --brand-yellow: #FFE943;
+      --bg:         #0D0D0F;
+      --surface:    #161618;
+      --surface2:   #1E1E22;
+      --border:     #2A2A30;
+      --border2:    #353540;
+      --c-concept:  #9B7FFF;
+      --c-copy:     #4FA3F9;
+      --c-design:   #E87DF0;
+      --c-dev:      #3ECFA0;
+      --c-approval: #FF9A3C;
+      --c-done:     #3ECF8E;
+      --text:       #EEEEF2;
+      --muted:      #7A7A8C;
+      --radius:     14px;
+      --radius-sm:  9px;
+      --mono:       'DM Mono', monospace;
+      --sans:       'Heebo', sans-serif;
+      --shadow:     0 4px 28px rgba(0,0,0,.55);
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--sans);
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; overflow-x: hidden; line-height: 1.6;
+    }
+    body::before {
+      content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+      background-image:
+        linear-gradient(rgba(255,78,26,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,78,26,.025) 1px, transparent 1px);
+      background-size: 44px 44px;
+    }
+
+    .wrapper { max-width:1360px; margin:0 auto; padding:0 28px 100px; position:relative; z-index:1; }
+
+    /* ── Header ── */
+    header {
+      padding:28px 0 22px; display:flex; align-items:center;
+      justify-content:space-between; border-bottom:1px solid var(--border);
+      margin-bottom:36px; gap:16px; flex-wrap:wrap;
+    }
+    .logo { display:flex; align-items:center; gap:20px; }
+    .logo-svg-wrap {
+      flex-shrink:0; display:flex; align-items:center;
+      height:34px;
+    }
+    .logo-svg-wrap svg { height:34px; width:auto; }
+    /* make wordmark white on dark bg; yellow pill stays as-is */
+    .logo-svg-wrap svg path[fill="currentColor"],
+    .logo-svg-wrap .wordmark-path { fill: #EEEEF2; }
+    .logo-divider { width:1px; height:30px; background:var(--border2); flex-shrink:0; }
+    .logo-text .client { font-size:1.35rem; font-weight:800; letter-spacing:-.03em; line-height:1; }
+    .logo-text .brand  { font-size:.68rem; font-weight:500; color:var(--brand); text-transform:uppercase; letter-spacing:.1em; margin-top:3px; }
+    .live-badge { display:flex; align-items:center; gap:7px; font-family:var(--mono); font-size:.72rem; color:var(--muted); }
+    .live-dot { width:7px; height:7px; border-radius:50%; background:var(--c-done); animation:pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(62,207,142,.5)} 50%{box-shadow:0 0 0 5px rgba(62,207,142,0)} }
+
+    /* ── Section label ── */
+    .section-label {
+      font-size:.68rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+      color:var(--brand); display:flex; align-items:center; gap:8px; margin-bottom:18px;
+    }
+    .section-label::after { content:''; flex:1; height:1px; background:var(--border); }
+    .section-label .material-icons-round { font-size:13px; }
+
+    /* ── Workflow card ── */
+    #workflow-section { margin-bottom:36px; }
+    .workflow-card {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:var(--radius); padding:28px 32px; box-shadow:var(--shadow);
+    }
+
+    /* approval spotlight */
+    .approval-banner {
+      display:flex; align-items:center; justify-content:space-between;
+      background:rgba(255,154,60,.08); border:1px solid rgba(255,154,60,.25);
+      border-radius:var(--radius-sm); padding:14px 20px; margin-bottom:24px;
+      gap:12px; flex-wrap:wrap; cursor:pointer; transition:border-color .18s;
+    }
+    .approval-banner:hover { border-color:rgba(255,154,60,.5); }
+    .approval-banner .ab-left { display:flex; align-items:center; gap:10px; }
+    .approval-banner .ab-icon { font-size:22px; }
+    .approval-banner .ab-title { font-size:.82rem; font-weight:600; color:var(--c-approval); }
+    .approval-banner .ab-sub   { font-size:.72rem; color:var(--muted); }
+    .approval-banner .ab-count { font-family:var(--mono); font-size:2.4rem; font-weight:800; color:var(--c-approval); line-height:1; }
+
+    /* flow row */
+    .flow-counts-row {
+      display:flex; align-items:stretch; overflow-x:auto; padding-bottom:4px;
+    }
+    .flow-step { display:flex; flex-direction:column; align-items:center; gap:8px; flex:1; min-width:100px; }
+    .flow-node {
+      display:flex; flex-direction:column; align-items:center; gap:4px;
+      padding:12px 14px; border-radius:12px; border:1.5px solid; width:100%;
+      text-align:center; cursor:pointer; transition:transform .15s, box-shadow .15s;
+    }
+    .flow-node:hover { transform:translateY(-2px); box-shadow:0 6px 18px rgba(0,0,0,.35); }
+    .flow-node.active-filter { outline:2px solid rgba(255,255,255,.6); outline-offset:2px; }
+    .flow-emoji  { font-size:1.25rem; line-height:1; }
+    .flow-label  { font-size:.78rem; font-weight:700; white-space:nowrap; }
+    .flow-count  { font-family:var(--mono); font-size:1.6rem; font-weight:800; line-height:1; margin-top:2px; }
+    .flow-sublabel { font-size:.6rem; color:var(--muted); }
+    .flow-node.concept { background:#180e35; border-color:#9B7FFF; color:#9B7FFF; }
+    .flow-node.copy    { background:#0e1e35; border-color:#4FA3F9; color:#4FA3F9; }
+    .flow-node.design  { background:#1e0e2a; border-color:#E87DF0; color:#E87DF0; }
+    .flow-node.dev     { background:#0e1e1a; border-color:#3ECFA0; color:#3ECFA0; }
+    .flow-node.done    { background:#0a1e13; border-color:#3ECF8E; color:#3ECF8E; }
+
+    .flow-connector { display:flex; align-items:center; padding:0 4px; flex-shrink:0; padding-top:12px; }
+    .flow-connector-inner { display:flex; flex-direction:column; align-items:center; gap:0; }
+    .flow-connector-label { font-size:.58rem; color:var(--muted); white-space:nowrap; }
+    .flow-connector-arrow { font-size:1.2rem; color:var(--border2); line-height:1.1; }
+
+    /* ── Table toolbar ── */
+    #table-section { margin-bottom:36px; }
+    .table-toolbar { display:flex; gap:10px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+
+    .search-wrap { flex:1; min-width:190px; position:relative; }
+    .search-wrap .material-icons-round { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:17px; pointer-events:none; }
+    .search-input {
+      width:100%; background:var(--surface2); border:1px solid var(--border);
+      border-radius:var(--radius-sm); padding:9px 11px 9px 38px;
+      color:var(--text); font-family:var(--sans); font-size:.87rem; outline:none;
+      transition:border-color .2s, box-shadow .2s;
+    }
+    .search-input:focus { border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-dim); }
+    .search-input::placeholder { color:var(--muted); }
+
+    .select-wrap { position:relative; display:flex; align-items:center; }
+    .select-icon { position:absolute; left:10px; font-size:16px; color:var(--muted); pointer-events:none; z-index:1; }
+    .project-select {
+      appearance:none; background:var(--surface2); border:1px solid var(--border);
+      border-radius:var(--radius-sm); padding:9px 30px 9px 32px;
+      color:var(--text); font-family:var(--sans); font-size:.84rem;
+      cursor:pointer; outline:none; min-width:165px;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%237A7A8C'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+      background-repeat:no-repeat; background-position:right 9px center;
+      transition:border-color .2s;
+    }
+    .project-select:focus { border-color:var(--brand); }
+    .project-select option { background:var(--surface2); }
+
+    /* done toggle */
+    .done-toggle {
+      display:flex; align-items:center; gap:8px;
+      background:var(--surface2); border:1px solid var(--border);
+      border-radius:var(--radius-sm); padding:8px 13px;
+      cursor:pointer; font-size:.8rem; color:var(--muted);
+      transition:all .17s; user-select:none; white-space:nowrap;
+    }
+    .done-toggle:hover { border-color:var(--c-done); color:var(--c-done); }
+    .done-toggle.active { border-color:var(--c-done); color:var(--c-done); background:rgba(62,207,142,.08); }
+    .toggle-dot { width:28px; height:16px; border-radius:99px; background:var(--border2); position:relative; transition:background .2s; flex-shrink:0; }
+    .done-toggle.active .toggle-dot { background:var(--c-done); }
+    .toggle-dot::after { content:''; position:absolute; top:2px; left:2px; width:12px; height:12px; border-radius:50%; background:#fff; transition:transform .2s; }
+    .done-toggle.active .toggle-dot::after { transform:translateX(12px); }
+
+    .filter-pills { display:flex; gap:7px; flex-wrap:wrap; }
+    .pill {
+      padding:6px 12px; border-radius:99px; border:1px solid var(--border);
+      background:var(--surface2); color:var(--muted); font-size:.75rem;
+      cursor:pointer; transition:all .16s; display:flex; align-items:center; gap:5px;
+    }
+    .pill:hover, .pill.active { border-color:var(--brand); color:var(--brand); background:var(--brand-dim); }
+    .pill .dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
+
+    /* table */
+    .table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); }
+    .table-scroll { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:.85rem; }
+    thead th {
+      background:var(--surface2); padding:12px 15px; text-align:left;
+      font-size:.66rem; text-transform:uppercase; letter-spacing:.1em;
+      color:var(--muted); white-space:nowrap; border-bottom:1px solid var(--border);
+      cursor:pointer; user-select:none;
+    }
+    thead th:hover { color:var(--text); }
+    thead th .sort-icon { vertical-align:middle; font-size:12px; opacity:.4; }
+    tbody tr { border-bottom:1px solid var(--border); transition:background .13s; }
+    tbody tr:last-child { border-bottom:none; }
+    tbody tr:hover { background:var(--surface2); }
+    tbody tr.row-done { opacity:.55; }
+    tbody tr.row-done .task-name { text-decoration:line-through; }
+    td { padding:11px 15px; vertical-align:middle; }
+    .task-name { font-weight:500; }
+    .task-date { font-family:var(--mono); font-size:.77rem; color:var(--muted); }
+
+    .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:99px; font-size:.72rem; font-weight:600; white-space:nowrap; }
+    .badge::before { content:''; width:5px; height:5px; border-radius:50%; background:currentColor; }
+    .badge.concept  { background:rgba(155,127,255,.13); color:var(--c-concept); }
+    .badge.copy     { background:rgba(79,163,249,.13);  color:var(--c-copy); }
+    .badge.design   { background:rgba(232,125,240,.13); color:var(--c-design); }
+    .badge.dev      { background:rgba(62,207,160,.13);  color:var(--c-dev); }
+    .badge.approval { background:rgba(255,154,60,.13);  color:var(--c-approval); }
+    .badge.done     { background:rgba(62,207,142,.13);  color:var(--c-done); }
+    .badge.unknown  { background:rgba(122,122,140,.13); color:var(--muted); }
+
+    .link-cell a { color:var(--c-copy); text-decoration:none; font-family:var(--mono); font-size:.75rem; display:inline-flex; align-items:center; gap:3px; transition:opacity .14s; }
+    .link-cell a:hover { opacity:.7; }
+    .link-cell .dash { color:var(--muted); font-size:.77rem; }
+
+    .loading-row td { text-align:center; padding:60px; color:var(--muted); }
+    .spinner { width:26px; height:26px; border:2px solid var(--border); border-top-color:var(--brand); border-radius:50%; animation:spin .7s linear infinite; margin:0 auto 10px; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    .empty-state { text-align:center; padding:60px; color:var(--muted); }
+    .empty-state .material-icons-round { font-size:42px; display:block; margin-bottom:10px; opacity:.22; }
+
+    /* ── Collapsible form ── */
+    #form-section { margin-bottom:36px; }
+    .form-header {
+      display:flex; align-items:center; justify-content:space-between;
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:var(--radius); padding:18px 24px;
+      cursor:pointer; transition:border-color .2s; user-select:none;
+    }
+    .form-header:hover { border-color:var(--brand); }
+    .form-header.open  { border-radius:var(--radius) var(--radius) 0 0; }
+    .form-header-left  { display:flex; align-items:center; gap:12px; }
+    .form-header-icon  { width:36px; height:36px; border-radius:9px; background:var(--brand-dim); display:grid; place-items:center; color:var(--brand); }
+    .form-header-title { font-size:.95rem; font-weight:700; }
+    .form-header-sub   { font-size:.73rem; color:var(--muted); }
+    .form-chevron { color:var(--muted); transition:transform .25s; }
+    .form-header.open .form-chevron { transform:rotate(180deg); }
+
+    .form-body {
+      background:var(--surface); border:1px solid var(--border); border-top:none;
+      border-radius:0 0 var(--radius) var(--radius); padding:24px; display:none;
+    }
+    .form-body.open { display:block; }
+
+    .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+    @media(max-width:640px) { .form-grid{grid-template-columns:1fr;} }
+    .form-grid .full { grid-column:1/-1; }
+
+    .field { display:flex; flex-direction:column; gap:5px; }
+    .field label { font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); }
+    .field input, .field select, .field textarea {
+      background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm);
+      padding:10px 12px; color:var(--text); font-family:var(--sans); font-size:.88rem;
+      outline:none; transition:border-color .2s, box-shadow .2s; resize:vertical;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-dim); }
+    .field select option { background:var(--surface2); }
+    .field input::placeholder, .field textarea::placeholder { color:var(--muted); }
+
+    .btn { display:inline-flex; align-items:center; gap:7px; padding:10px 22px; border-radius:var(--radius-sm); font-family:var(--sans); font-size:.88rem; font-weight:700; cursor:pointer; border:none; transition:all .2s; white-space:nowrap; }
+    .btn-primary { background:var(--brand); color:#fff; box-shadow:0 4px 16px var(--brand-glow); }
+    .btn-primary:hover { background:var(--brand-soft); transform:translateY(-1px); }
+    .btn-primary:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+    .btn-ghost { background:var(--surface2); border:1px solid var(--border); color:var(--text); }
+    .btn-ghost:hover { border-color:var(--brand); color:var(--brand); }
+
+    /* ── Toast ── */
+    #toast-container { position:fixed; bottom:24px; right:24px; display:flex; flex-direction:column; gap:8px; z-index:9999; }
+    .toast { display:flex; align-items:center; gap:10px; padding:12px 18px; border-radius:var(--radius-sm); background:var(--surface); border:1px solid var(--border); box-shadow:0 8px 32px rgba(0,0,0,.5); font-size:.84rem; min-width:260px; max-width:360px; animation:slideUp .3s ease; }
+    .toast.success { border-color:var(--c-done); }
+    .toast.error   { border-color:#F96060; }
+    .toast .toast-icon { font-size:19px; flex-shrink:0; }
+    .toast.success .toast-icon { color:var(--c-done); }
+    .toast.error   .toast-icon { color:#F96060; }
+    .toast .toast-close { margin-left:auto; cursor:pointer; color:var(--muted); background:none; border:none; font-size:17px; line-height:1; }
+    .toast.hide { animation:slideDown .3s ease forwards; }
+    @keyframes slideUp   { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes slideDown { from{opacity:1;transform:translateY(0)} to{opacity:0;transform:translateY(14px)} }
+
+    /* ── Config banner ── */
+    .config-banner { background:rgba(255,154,60,.07); border:1px solid rgba(255,154,60,.22); border-radius:var(--radius-sm); padding:11px 16px; font-size:.79rem; color:var(--c-approval); display:flex; align-items:flex-start; gap:8px; margin-bottom:18px; }
+    .config-banner .material-icons-round { flex-shrink:0; font-size:16px; margin-top:1px; }
+    .config-banner code { font-family:var(--mono); font-size:.75rem; background:rgba(255,154,60,.12); padding:1px 5px; border-radius:3px; }
+
+    @media(max-width:768px) { .wrapper{padding:0 16px 70px;} header{padding:20px 0 16px;} }
+  </style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+<div class="wrapper">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <div class="logo-svg-wrap">
+        <svg width="917" height="292" viewBox="0 0 917 292" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M525.116 116.906C525.116 54.4573 575.741 3.83301 638.189 3.83301H803.007C865.455 3.83301 916.079 54.4573 916.079 116.906C916.079 179.354 865.455 229.978 803.007 229.978H638.189C575.741 229.978 525.116 179.354 525.116 116.906Z" fill="#FFE943"/>
+          <path d="M98.6391 149.861C98.6391 158.21 96.6564 165.293 92.9389 170.859C89.717 176.172 85.2559 180.726 79.8035 184.015C74.5989 187.051 68.8987 189.328 62.9506 190.593C57.0025 191.858 51.5501 192.617 46.0977 192.617C39.4061 192.617 32.7145 192.111 25.5272 191.352C18.3399 190.593 10.9048 189.075 2.72621 186.545L0 185.786L0.495674 183.003L4.46107 163.016L5.20458 159.728L8.42646 160.739C16.3572 163.016 23.7924 164.534 30.2361 165.546C36.9277 166.558 42.1323 166.811 46.3455 166.811C49.3196 166.811 52.2936 166.558 55.0198 165.799C57.9939 165.04 60.7201 164.281 62.9506 163.016C65.1811 161.751 66.6681 160.233 67.6595 158.463C68.8987 156.945 69.3943 154.921 69.3943 152.897C69.3943 148.596 67.6595 144.801 65.1811 142.018C62.2071 138.729 58.2417 135.693 53.285 132.91C48.3282 130.127 42.8758 127.091 36.9277 124.561C30.9796 121.525 25.5272 118.236 20.0748 114.441C14.8702 110.393 10.4092 105.586 6.6916 100.274C2.97404 94.2016 0.991348 87.1178 0.991348 79.0219C0.991348 72.95 2.47837 67.3841 5.45241 62.5772H5.70025C8.92213 57.7703 12.6397 53.9753 17.3486 50.9394C22.0575 47.9035 27.2621 45.6265 32.7145 43.8555C38.4147 42.0845 43.8671 41.3256 49.3196 41.3256C54.772 41.3256 60.7201 41.8316 67.1638 42.8435C73.8554 43.6025 81.5384 45.1205 89.9648 47.3975L92.691 48.1564L92.1954 51.1924L88.4778 70.6731L87.7343 74.215L84.5124 73.203C77.0773 70.926 70.3857 69.4081 64.6854 68.6491C58.9852 67.6371 53.7806 67.3841 49.3196 67.3841C43.6193 67.3841 38.9104 68.9021 35.1928 71.432C31.7231 73.962 30.2361 76.9979 30.2361 80.7929C30.2361 84.3348 31.7231 87.1178 34.6972 89.6477C38.1669 92.6837 42.1323 95.2136 46.5933 97.7436C51.5501 100.021 56.7547 102.803 62.4549 105.586C68.403 108.622 74.1033 111.911 79.3078 115.706C84.7602 119.501 89.2213 124.308 92.9389 129.874C96.4086 135.44 98.3913 142.271 98.6391 150.114V149.861Z" fill="currentColor"/>
+          <path d="M184.215 192.277C177.771 192.277 171.576 191.518 166.123 190.253L173.558 159.64C176.78 160.905 180.25 161.411 184.215 161.411C190.163 161.411 195.864 160.146 201.068 157.869C206.521 155.592 210.982 152.303 214.947 148.255C218.912 144.207 222.134 139.401 224.365 134.088C226.595 128.522 227.835 122.703 227.835 116.378C227.835 110.053 226.595 104.487 224.365 99.1742C222.134 93.8613 218.912 89.0544 214.947 85.0065C210.982 80.9585 206.273 77.6696 201.068 75.3926C195.616 73.1157 190.163 71.8507 184.215 71.8507C178.267 71.8507 172.567 73.1157 167.362 75.3926C161.91 77.6696 157.449 80.9585 153.483 85.0065C149.518 89.0544 146.296 93.8613 144.066 99.1742C141.835 104.487 140.596 110.306 140.596 116.378V262.558L110.36 262.052V116.378C110.36 106.005 112.342 96.3913 116.06 87.0304C120.025 77.9226 125.23 69.8267 131.922 62.9959C138.613 56.165 146.296 50.5991 155.466 46.5511C164.388 42.5032 174.054 40.4792 184.463 40.4792C194.872 40.4792 204.29 42.5032 213.212 46.5511C222.382 50.5991 230.313 56.165 237.005 62.9959C243.696 69.8267 249.149 77.9226 253.114 87.0304C257.079 96.1383 259.062 106.005 259.062 116.378C259.062 126.751 257.079 136.871 253.114 145.978C249.149 155.086 243.696 163.182 237.005 170.013C230.313 176.844 222.382 182.41 213.212 186.205C204.042 190.253 194.377 192.024 184.463 192.024L184.215 192.277Z" fill="currentColor"/>
+          <path d="M342.583 40.4792C352.744 40.4792 362.162 42.5032 371.332 46.2981C380.254 50.3461 388.185 55.659 394.877 62.4899C401.568 69.3207 407.021 77.4166 410.986 86.5244C414.951 95.6323 416.934 105.499 416.934 116.125C416.934 126.751 414.951 136.618 410.986 145.725C407.021 154.833 401.568 162.929 394.877 169.76C388.185 176.591 380.254 181.904 371.332 185.952C362.41 190 352.744 191.771 342.583 191.771C332.422 191.771 322.508 189.747 313.586 185.952C304.664 181.904 296.733 176.591 290.042 169.76C283.35 162.929 278.145 155.086 274.18 145.725C270.215 136.618 268.48 126.751 268.48 116.125C268.48 105.499 270.462 95.6323 274.18 86.5244C278.145 77.4166 283.35 69.3207 290.042 62.4899C296.733 55.659 304.416 50.0931 313.586 46.2981C322.508 42.2502 332.174 40.4792 342.583 40.4792ZM342.583 160.399C348.531 160.399 354.231 159.134 359.436 156.857C364.888 154.58 369.349 151.291 373.315 147.496C377.28 143.448 380.254 138.895 382.485 133.582C384.715 128.269 385.954 122.45 385.954 116.378C385.954 110.306 384.715 104.487 382.485 99.1742C380.254 93.6083 377.032 89.0544 373.315 85.0065C369.349 80.9585 364.888 77.9226 359.436 75.6456C353.984 73.3687 348.531 72.1037 342.583 72.1037C336.635 72.1037 330.935 73.3687 325.73 75.6456C320.278 77.9226 315.817 81.2115 311.851 85.0065C307.886 88.8014 304.664 93.6083 302.433 99.1742C300.203 104.74 298.964 110.306 298.964 116.378C298.964 122.45 300.203 128.269 302.433 133.582C304.664 138.895 307.886 143.701 311.851 147.496C315.817 151.544 320.525 154.58 325.73 156.857C331.182 159.134 336.635 160.399 342.583 160.399Z" fill="currentColor"/>
+          <path d="M462.288 116.125C462.288 122.197 463.528 128.016 465.758 133.329C467.989 138.895 471.21 143.449 475.176 147.496C479.141 151.544 483.85 154.833 489.055 157.11C494.507 159.387 499.96 160.652 505.908 160.652V192.277C495.746 192.277 486.329 190.253 477.406 186.458C468.484 182.41 460.553 177.097 453.862 170.519C447.17 163.941 441.718 155.845 437.752 146.737C433.787 137.63 431.557 128.016 431.309 117.643V0.505991L462.288 0V40.4793H505.412V72.1037H462.288V116.125Z" fill="currentColor"/>
+          <path d="M629.839 40.2264C640.001 40.2264 649.418 42.2504 658.588 46.0453C667.511 50.0933 675.441 55.4062 682.133 62.2371C688.825 69.0679 694.277 77.1638 698.242 86.2716C702.208 95.3795 704.19 105.246 704.19 115.872C704.19 126.498 702.208 136.365 698.242 145.473C694.277 154.58 688.825 162.676 682.133 169.507C675.441 176.338 667.511 181.651 658.588 185.699C649.666 189.747 640.001 191.518 629.839 191.518C619.678 191.518 609.765 189.494 600.842 185.699C591.92 181.651 583.989 176.338 577.298 169.507C570.606 162.676 565.402 154.833 561.436 145.473C557.471 136.365 555.736 126.498 555.736 115.872C555.736 105.246 557.719 95.3795 561.436 86.2716C565.402 77.1638 570.606 69.0679 577.298 62.2371C583.989 55.4062 591.672 49.8403 600.842 46.0453C609.765 41.9974 619.43 40.2264 629.839 40.2264ZM629.839 160.146C635.787 160.146 641.488 158.881 646.692 156.604C652.145 154.327 656.606 151.039 660.571 147.244C664.537 143.196 667.511 138.642 669.741 133.329C671.972 128.016 673.211 122.197 673.211 116.125C673.211 110.053 671.972 104.234 669.741 98.9214C667.511 93.3555 664.289 88.8016 660.571 84.7537C656.606 80.7057 652.145 77.6698 646.692 75.3928C641.24 73.1159 635.787 71.8509 629.839 71.8509C623.891 71.8509 618.191 73.1159 612.986 75.3928C607.534 77.6698 603.073 80.9587 599.108 84.7537C595.142 88.5486 591.92 93.3555 589.69 98.9214C587.459 104.487 586.22 110.053 586.22 116.125C586.22 122.197 587.459 128.016 589.69 133.329C591.92 138.642 595.142 143.449 599.108 147.244C603.073 151.292 607.782 154.327 612.986 156.604C618.439 158.881 623.891 160.146 629.839 160.146Z" fill="currentColor"/>
+          <path d="M869.498 192.024H838.518V116.125C838.518 110.053 837.279 104.234 835.048 98.9214C832.818 93.3555 829.596 88.8016 825.63 84.7537C821.665 80.7057 816.956 77.6698 811.752 75.3928C806.547 73.1159 800.847 71.8509 794.899 71.8509C788.951 71.8509 783.25 73.1159 778.046 75.3928C772.841 77.6698 768.132 80.9587 764.167 84.7537C760.201 88.5486 756.98 93.3555 754.749 98.9214C752.518 104.487 751.279 110.053 751.279 116.125V192.024H720.3V116.125C720.3 105.752 722.035 96.1385 725.752 86.7776C729.718 77.6698 734.922 69.5739 741.614 62.743C748.305 55.9122 756.236 50.3463 765.406 46.2983C774.576 42.2504 784.242 40.2264 794.651 40.2264C805.06 40.2264 814.726 42.2504 823.896 46.2983C833.066 50.3463 840.996 55.9122 847.688 62.743C854.379 69.5739 859.832 77.6698 863.549 86.7776C867.515 95.8855 869.25 105.752 869.002 116.125V192.024H869.498Z" fill="currentColor"/>
+        </svg>
+      </div>
+      <div class="logo-divider"></div>
+      <div class="logo-text">
+        <div class="client">Davidson</div>
+        <div class="brand">Studio Dashboard</div>
+      </div>
+    </div>
+    <div class="live-badge">
+      <div class="live-dot"></div>
+      <span id="last-updated">מתעדכן…</span>
+    </div>
+  </header>
+
+  <!-- Workflow + Stats -->
+  <section id="workflow-section">
+    <p class="section-label"><span class="material-icons-round">account_tree</span>תהליך סטודיו</p>
+    <div class="workflow-card">
+
+      <!-- Approval spotlight — clicking filters to אישור לקוח -->
+      <div class="approval-banner" id="approval-banner" onclick="clickApproval()">
+        <div class="ab-left">
+          <span class="ab-icon">⏳</span>
+          <div>
+            <div class="ab-title">ממתין לאישור לקוח</div>
+            <div class="ab-sub">לחץ לסינון נכסים הדורשים תשומת לב</div>
+          </div>
+        </div>
+        <div class="ab-count" id="cnt-approval">—</div>
+      </div>
+
+      <!-- Flow nodes with live counts -->
+      <div class="flow-counts-row">
+
+        <div class="flow-step">
+          <div class="flow-node concept" data-filter="קונספט" onclick="clickFlowNode(this)">
+            <span class="flow-emoji">💡</span>
+            <span class="flow-label">קונספט</span>
+            <span class="flow-count" id="cnt-concept">—</span>
+            <span class="flow-sublabel">נכסים</span>
+          </div>
+        </div>
+        <div class="flow-connector"><div class="flow-connector-inner"><span class="flow-connector-label">אישור</span><span class="flow-connector-arrow">→</span></div></div>
+
+        <div class="flow-step">
+          <div class="flow-node copy" data-filter="קופי" onclick="clickFlowNode(this)">
+            <span class="flow-emoji">✍️</span>
+            <span class="flow-label">קופי</span>
+            <span class="flow-count" id="cnt-copy">—</span>
+            <span class="flow-sublabel">נכסים</span>
+          </div>
+        </div>
+        <div class="flow-connector"><div class="flow-connector-inner"><span class="flow-connector-label">אישור</span><span class="flow-connector-arrow">→</span></div></div>
+
+        <div class="flow-step">
+          <div class="flow-node design" data-filter="עיצוב" onclick="clickFlowNode(this)">
+            <span class="flow-emoji">🎨</span>
+            <span class="flow-label">עיצוב</span>
+            <span class="flow-count" id="cnt-design">—</span>
+            <span class="flow-sublabel">נכסים</span>
+          </div>
+        </div>
+        <div class="flow-connector"><div class="flow-connector-inner"><span class="flow-connector-arrow">→</span></div></div>
+
+        <div class="flow-step">
+          <div class="flow-node dev" data-filter="פיתוח" onclick="clickFlowNode(this)">
+            <span class="flow-emoji">⚙️</span>
+            <span class="flow-label">פיתוח</span>
+            <span class="flow-count" id="cnt-dev">—</span>
+            <span class="flow-sublabel">נכסים</span>
+          </div>
+        </div>
+        <div class="flow-connector"><div class="flow-connector-inner"><span class="flow-connector-label">אישור</span><span class="flow-connector-arrow">→</span></div></div>
+
+        <div class="flow-step">
+          <div class="flow-node done" data-filter="הושלם" onclick="clickFlowNode(this)">
+            <span class="flow-emoji">✅</span>
+            <span class="flow-label">הושלם</span>
+            <span class="flow-count" id="cnt-done">—</span>
+            <span class="flow-sublabel">נכסים</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Task table -->
+  <section id="table-section">
+    <p class="section-label"><span class="material-icons-round">table_rows</span>רשימת נכסים</p>
+
+    <div class="config-banner">
+      <span class="material-icons-round">info</span>
+      <span>החלף את <code>SHEET_CSV_URL</code> בכתובת ה-CSV של הגיליון.
+      עמודות: <code>Project, Asset, Status, Due Date, Figma Link, Drive Link, Docs Link</code>.</span>
+    </div>
+
+    <div class="table-toolbar">
+      <div class="search-wrap">
+        <span class="material-icons-round">search</span>
+        <input type="text" class="search-input" id="search-input" placeholder="חיפוש…" />
+      </div>
+      <div class="select-wrap">
+        <span class="material-icons-round select-icon">folder_open</span>
+        <select id="project-filter" class="project-select">
+          <option value="all">כל הפרויקטים</option>
+        </select>
+      </div>
+      <div class="filter-pills" id="filter-pills">
+        <button class="pill active" data-filter="all"><span class="dot"></span>הכל</button>
+        <button class="pill" data-filter="קונספט"><span class="dot"></span>קונספט</button>
+        <button class="pill" data-filter="קופי"><span class="dot"></span>קופי</button>
+        <button class="pill" data-filter="עיצוב"><span class="dot"></span>עיצוב</button>
+        <button class="pill" data-filter="פיתוח"><span class="dot"></span>פיתוח</button>
+        <button class="pill" data-filter="לקוח"><span class="dot"></span>אישור לקוח</button>
+        <button class="pill" data-filter="הושלם"><span class="dot"></span>הושלם</button>
+      </div>
+      <div class="done-toggle" id="done-toggle" onclick="toggleDone()">
+        <div class="toggle-dot"></div>
+        הצג הושלם
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th data-col="0">Project <span class="material-icons-round sort-icon">unfold_more</span></th>
+              <th data-col="1">Asset <span class="material-icons-round sort-icon">unfold_more</span></th>
+              <th data-col="2">Status <span class="material-icons-round sort-icon">unfold_more</span></th>
+              <th data-col="3">Due Date <span class="material-icons-round sort-icon">unfold_more</span></th>
+              <th>Figma</th>
+              <th>Drive</th>
+              <th>Docs</th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <tr class="loading-row"><td colspan="7"><div class="spinner"></div><div>טוען נתונים…</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Collapsible form -->
+  <section id="form-section">
+    <div class="form-header" id="form-toggle" onclick="toggleForm()">
+      <div class="form-header-left">
+        <div class="form-header-icon"><span class="material-icons-round">auto_awesome</span></div>
+        <div>
+          <div class="form-header-title">הפעל בקשת AI</div>
+          <div class="form-header-sub">תסריטי שיחה · השוואת מחירים · פרופיל רוכש אידאלי</div>
+        </div>
+      </div>
+      <span class="material-icons-round form-chevron">expand_more</span>
+    </div>
+
+    <div class="form-body" id="form-body">
+      <div class="config-banner">
+        <span class="material-icons-round">info</span>
+        <span>החלף את <code>YOUR_WEBHOOK_URL</code> בכתובת ה-webhook שלך (Make, Zapier, n8n…).</span>
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="f-name">שם מלא</label>
+          <input type="text" id="f-name" placeholder="ישראל ישראלי" autocomplete="name" />
+        </div>
+        <div class="field">
+          <label for="f-email">אימייל</label>
+          <input type="email" id="f-email" placeholder="you@company.com" autocomplete="email" />
+        </div>
+        <div class="field">
+          <label for="f-task">פרויקט קשור</label>
+          <select id="f-task"><option value="">— בחר פרויקט —</option></select>
+        </div>
+        <div class="field">
+          <label for="f-type">סוג הבקשה</label>
+          <select id="f-type">
+            <option value="">— בחר —</option>
+            <option>תסריטי שיחה</option>
+            <option>השוואת מחירים</option>
+            <option>פרופיל רוכש אידאלי</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label for="f-message">פרטים נוספים</label>
+          <textarea id="f-message" rows="4" placeholder="תאר את הבקשה…"></textarea>
+        </div>
+        <div class="full" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <button class="btn btn-primary" id="submit-btn" onclick="submitForm()">
+            <span class="material-icons-round" style="font-size:17px">send</span>שלח לאוטומציה
+          </button>
+          <button class="btn btn-ghost" onclick="resetForm()">
+            <span class="material-icons-round" style="font-size:17px">refresh</span>נקה
+          </button>
+          <span id="form-status" style="font-size:.8rem;color:var(--muted);"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /wrapper -->
+
+<script>
+/* ══════════════════════════════════════════
+   ⚙ CONFIG
+   ══════════════════════════════════════════ */
+const CONFIG = {
+  SHEET_CSV_URL: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR5_LUb3Un99CB1rOow24jiVA8n1Hgl8-6oZvBpxkV5Pvyee6il2HHNg9S0XH3JeZ8OrxlGrv6R95QT/pub?output=csv/?client=Davidson',
+  WEBHOOK_URL:   'YOUR_WEBHOOK_URL',
+};
+
+// ── State ──────────────────────────────────
+let allRows      = [];
+let activeFilter = 'all';
+let activeProject= 'all';
+let showDone     = false;
+let searchQuery  = '';
+let sortCol      = -1;
+let sortDir      = 1;
+
+// ── Status key resolver ────────────────────
+const STATUS_MAP = { 'קונספט':'concept','קופי':'copy','עיצוב':'design','פיתוח':'dev','הושלם':'done' };
+function getStatusKey(s) {
+  const n = (s||'').trim().replace(/\s+/g,' ');
+  if (STATUS_MAP[n]) return STATUS_MAP[n];
+  if (n.includes('לקוח')) return 'approval';
+  return 'unknown';
+}
+
+// ── Fetch ──────────────────────────────────
+async function fetchSheet() {
+  if (!CONFIG.SHEET_CSV_URL || CONFIG.SHEET_CSV_URL === 'SHEET_CSV_URL') {
+    allRows = getDemoData();
+  } else {
+    try {
+      const res = await fetch(CONFIG.SHEET_CSV_URL, {cache:'no-store'});
+      if (!res.ok) throw new Error();
+      allRows = parseCSV(await res.text()).slice(1);
+    } catch {
+      allRows = getDemoData();
+      showToast('לא ניתן לטעון את הגיליון — מוצגים נתוני דמו.','error');
+    }
+  }
+  renderTable(); updateStats(); populateProjectFilter(); setLastUpdated();
+}
+
+function parseCSV(text) {
+  return text.split('\n').filter(l=>l.trim()).map(line=>{
+    const cols=[]; let cur='',inQ=false;
+    for(const c of line){
+      if(c==='"') inQ=!inQ;
+      else if(c===','&&!inQ){cols.push(cur.trim());cur='';}
+      else cur+=c;
+    }
+    cols.push(cur.trim()); return cols;
+  });
+}
+
+// ── Demo data: [Project, Asset, Status, Due, Figma, Drive, Docs] ──
+function getDemoData() {
+  return [
+    ['קמפיין קיץ',    'באנר ראשי',      'קונספט',     '2025-04-10','https://figma.com','https://drive.google.com',''],
+    ['קמפיין קיץ',    'תסריט וידאו',    'קופי',       '2025-04-12','https://figma.com','https://drive.google.com','https://docs.google.com'],
+    ['אתר חברה',      'עמוד בית',       'עיצוב',      '2025-04-15','https://figma.com','https://drive.google.com',''],
+    ['אתר חברה',      'עמוד אודות',     'אישור לקוח', '2025-04-18','https://figma.com','https://drive.google.com','https://docs.google.com'],
+    ['ניוזלטר אפריל', 'תבנית אימייל',  'הושלם',      '2025-03-30','https://figma.com','https://drive.google.com','https://docs.google.com'],
+    ['מדיה חברתית',  'פוסט אינסטגרם',  'קופי',       '2025-04-20','','https://drive.google.com',''],
+    ['מדיה חברתית',  'סטורי שבועי',    'קונספט',     '2025-04-22','','',''],
+    ['מצגת מכירות',  'סלייד מוצר',     'פיתוח',      '2025-04-25','https://figma.com','https://drive.google.com',''],
+    ['מצגת מכירות',  'כיסוי',          'אישור לקוח', '2025-04-08','https://figma.com','https://drive.google.com','https://docs.google.com'],
+    ['מיתוג מחדש',   'לוגו חדש',       'הושלם',      '2025-03-20','https://figma.com','https://drive.google.com','https://docs.google.com'],
+  ];
+}
+
+// ── Render table ───────────────────────────
+function renderTable() {
+  const tbody = document.getElementById('table-body');
+  const q = searchQuery.toLowerCase();
+
+  let rows = allRows.filter(r => {
+    const status = (r[2]||'').trim().replace(/\s+/g,' ');
+    const isDone = status === 'הושלם';
+    if (isDone && !showDone) return false;
+
+    let matchFilter = true;
+    if (activeFilter !== 'all') {
+      if (activeFilter === 'לקוח') matchFilter = status.includes('לקוח');
+      else if (activeFilter === 'הושלם') matchFilter = isDone;
+      else matchFilter = status === activeFilter;
+    }
+
+    const matchProject = activeProject==='all' || (r[0]||'').trim()===activeProject;
+    const matchSearch  = !q || r.some(c=>(c||'').toLowerCase().includes(q));
+    return matchFilter && matchProject && matchSearch;
+  });
+
+  if (sortCol >= 0) {
+    rows.sort((a,b)=>{
+      const va=(a[sortCol]||'').toLowerCase(), vb=(b[sortCol]||'').toLowerCase();
+      return va<vb?-sortDir:va>vb?sortDir:0;
+    });
+  }
+
+  if (!rows.length) {
+    tbody.innerHTML=`<tr><td colspan="7" class="empty-state"><span class="material-icons-round">search_off</span>אין נכסים תואמים</td></tr>`;
+    return;
+  }
+
+  const mkLink = (url,icon,label) => url
+    ? `<a href="${escHtml(url)}" target="_blank" rel="noopener"><span class="material-icons-round" style="font-size:13px">${icon}</span>${label}</a>`
+    : `<span class="dash">—</span>`;
+
+  tbody.innerHTML = rows.map(r => {
+    const [project='',asset='',status='',due='',figma='',drive='',docs=''] = r;
+    const key = getStatusKey(status);
+    return `<tr${key==='done'?' class="row-done"':''}>
+      <td class="task-name">${escHtml(project)}</td>
+      <td style="color:var(--muted)">${escHtml(asset)}</td>
+      <td><span class="badge ${key}">${escHtml(status)}</span></td>
+      <td class="task-date">${formatDate(due)}</td>
+      <td class="link-cell">${mkLink(figma,'open_in_new','Figma')}</td>
+      <td class="link-cell">${mkLink(drive,'folder_open','Drive')}</td>
+      <td class="link-cell">${mkLink(docs,'description','Docs')}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Stats ──────────────────────────────────
+function updateStats() {
+  const c={concept:0,copy:0,design:0,dev:0,approval:0,done:0};
+  allRows.forEach(r=>{ const k=getStatusKey(r[2]); if(k in c) c[k]++; });
+  document.getElementById('cnt-concept').textContent  = c.concept;
+  document.getElementById('cnt-copy').textContent     = c.copy;
+  document.getElementById('cnt-design').textContent   = c.design;
+  document.getElementById('cnt-dev').textContent      = c.dev;
+  document.getElementById('cnt-approval').textContent = c.approval;
+  document.getElementById('cnt-done').textContent     = c.done;
+}
+
+// ── Flow node click ────────────────────────
+function clickFlowNode(el) {
+  const filter = el.dataset.filter;
+  const allNodes = document.querySelectorAll('.flow-node');
+  if (activeFilter === filter) {
+    activeFilter = 'all';
+    allNodes.forEach(n=>n.classList.remove('active-filter'));
+    document.querySelectorAll('.pill').forEach(p=>p.classList.toggle('active',p.dataset.filter==='all'));
+  } else {
+    activeFilter = filter;
+    allNodes.forEach(n=>n.classList.remove('active-filter'));
+    el.classList.add('active-filter');
+    document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
+  }
+  if (activeFilter==='הושלם' && !showDone) {
+    showDone=true; document.getElementById('done-toggle').classList.add('active');
+  }
+  renderTable();
+}
+
+// ── Approval banner click ──────────────────
+function clickApproval() {
+  activeFilter = activeFilter==='לקוח' ? 'all' : 'לקוח';
+  document.querySelectorAll('.flow-node').forEach(n=>n.classList.remove('active-filter'));
+  document.querySelectorAll('.pill').forEach(p=>{
+    p.classList.toggle('active', p.dataset.filter==='לקוח' && activeFilter==='לקוח');
+    if(activeFilter==='all') p.classList.toggle('active',p.dataset.filter==='all');
+  });
+  renderTable();
+}
+
+// ── Done toggle ────────────────────────────
+function toggleDone() {
+  showDone = !showDone;
+  document.getElementById('done-toggle').classList.toggle('active',showDone);
+  renderTable();
+}
+
+// ── Filter pills ───────────────────────────
+document.getElementById('filter-pills').addEventListener('click', e=>{
+  const pill = e.target.closest('.pill'); if(!pill) return;
+  document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
+  pill.classList.add('active');
+  activeFilter = pill.dataset.filter;
+  document.querySelectorAll('.flow-node').forEach(n=>n.classList.remove('active-filter'));
+  if(activeFilter==='הושלם'&&!showDone){showDone=true;document.getElementById('done-toggle').classList.add('active');}
+  renderTable();
+});
+
+// ── Sort ───────────────────────────────────
+document.querySelectorAll('thead th[data-col]').forEach(th=>{
+  th.addEventListener('click',()=>{
+    const col=+th.dataset.col; sortDir=sortCol===col?sortDir*-1:1; sortCol=col; renderTable();
+  });
+});
+
+// ── Search ─────────────────────────────────
+document.getElementById('search-input').addEventListener('input',e=>{searchQuery=e.target.value;renderTable();});
+
+// ── Project filter ─────────────────────────
+function populateProjectFilter() {
+  const projects=[...new Set(allRows.map(r=>(r[0]||'').trim()).filter(Boolean))].sort();
+  const opt = p=>`<option value="${escHtml(p)}">${escHtml(p)}</option>`;
+  document.getElementById('project-filter').innerHTML='<option value="all">כל הפרויקטים</option>'+projects.map(opt).join('');
+  const fs=document.getElementById('f-task'), prev=fs.value;
+  fs.innerHTML='<option value="">— בחר פרויקט —</option>'+projects.map(opt).join('');
+  if(prev) fs.value=prev;
+}
+document.getElementById('project-filter').addEventListener('change',e=>{activeProject=e.target.value;renderTable();});
+
+// ── Form collapse ──────────────────────────
+function toggleForm() {
+  document.getElementById('form-toggle').classList.toggle('open');
+  document.getElementById('form-body').classList.toggle('open');
+}
+
+// ── Form submit ────────────────────────────
+async function submitForm() {
+  const btn=document.getElementById('submit-btn');
+  const payload={
+    name:    document.getElementById('f-name').value.trim(),
+    email:   document.getElementById('f-email').value.trim(),
+    project: document.getElementById('f-task').value,
+    type:    document.getElementById('f-type').value,
+    message: document.getElementById('f-message').value.trim(),
+    timestamp: new Date().toISOString(),
+  };
+  if(!payload.name||!payload.email||!payload.type){showToast('נא למלא שם, אימייל וסוג בקשה.','error');return;}
+  if(!CONFIG.WEBHOOK_URL||CONFIG.WEBHOOK_URL==='YOUR_WEBHOOK_URL'){showToast('מצב דמו — הבקשה הופעלה! הגדר WEBHOOK_URL לשליחה אמיתית.','success');return;}
+  btn.disabled=true;
+  try {
+    await fetch(CONFIG.WEBHOOK_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),mode:'no-cors'});
+    showToast('הבקשה נשלחה בהצלחה!','success'); resetForm();
+  } catch { showToast('שגיאה בשליחה.','error'); }
+  finally { btn.disabled=false; }
+}
+function resetForm() {
+  ['f-name','f-email','f-task','f-type','f-message'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+}
+
+// ── Helpers ────────────────────────────────
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function formatDate(s){if(!s)return'—';const d=new Date(s);return isNaN(d)?s:d.toLocaleDateString('he-IL',{day:'2-digit',month:'short',year:'numeric'});}
+function setLastUpdated(){document.getElementById('last-updated').textContent='עודכן: '+new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});}
+
+function showToast(msg,type='success'){
+  const t=document.createElement('div'); t.className=`toast ${type}`;
+  t.innerHTML=`<span class="material-icons-round toast-icon">${type==='success'?'check_circle':'error'}</span><span>${msg}</span><button class="toast-close material-icons-round" onclick="dismissToast(this.parentElement)">close</button>`;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(()=>dismissToast(t),5000);
+}
+function dismissToast(el){if(!el||!el.parentElement)return;el.classList.add('hide');setTimeout(()=>el.remove(),350);}
+
+// ── Init ───────────────────────────────────
+fetchSheet();
+setInterval(()=>{if(CONFIG.SHEET_CSV_URL!=='SHEET_CSV_URL')fetchSheet();},120_000);
+</script>
+</body>
+</html>
